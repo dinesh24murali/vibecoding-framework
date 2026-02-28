@@ -7,11 +7,13 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/auth"
 	"github.com/dinesh/vibecoding-framework/backend/internal/http/contract"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/gin-gonic/gin"
 )
 
 type Dependencies struct {
 	AuthHandler         *auth.Handler
+	ProvidersHandler    *providers.Handler
 	AdminAuthMiddleware gin.HandlerFunc
 }
 
@@ -40,6 +42,10 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 		api.POST("/auth/admin/login", deps.AuthHandler.AdminLogin)
 	}
 
+	if deps.ProvidersHandler != nil {
+		api.GET("/customer/providers", deps.ProvidersHandler.ListCustomerProviders)
+	}
+
 	admin := api.Group("/admin")
 	if deps.AdminAuthMiddleware != nil {
 		admin.Use(deps.AdminAuthMiddleware)
@@ -47,6 +53,13 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 	admin.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+	if deps.ProvidersHandler != nil {
+		admin.GET("/providers", deps.ProvidersHandler.ListAdminProviders)
+		admin.POST("/providers", deps.ProvidersHandler.CreateProvider)
+		admin.GET("/providers/:providerId", deps.ProvidersHandler.GetProviderByID)
+		admin.PATCH("/providers/:providerId", deps.ProvidersHandler.UpdateProvider)
+		admin.DELETE("/providers/:providerId", deps.ProvidersHandler.DeleteProvider)
+	}
 
 	return engine, nil
 }

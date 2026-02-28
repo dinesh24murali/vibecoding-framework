@@ -14,6 +14,7 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/config"
 	"github.com/dinesh/vibecoding-framework/backend/internal/db"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/dinesh/vibecoding-framework/backend/internal/router"
 	"github.com/dinesh/vibecoding-framework/backend/internal/users"
 )
@@ -48,6 +49,9 @@ func main() {
 	)
 	authService := auth.NewService(userRepo, tokenManager)
 	authHandler := auth.NewHandler(authService)
+	providerRepo := providers.NewRepository(gormDB)
+	providerService := providers.NewService(providerRepo)
+	providerHandler := providers.NewHandler(providerService)
 	adminAuthMiddleware := middleware.AdminAuth(func(token string) (string, string, error) {
 		claims, verifyErr := tokenManager.VerifyAccessToken(token)
 		if verifyErr != nil {
@@ -59,6 +63,7 @@ func main() {
 
 	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath, router.Dependencies{
 		AuthHandler:         authHandler,
+		ProvidersHandler:    providerHandler,
 		AdminAuthMiddleware: adminAuthMiddleware,
 	})
 	if err != nil {
