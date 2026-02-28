@@ -13,12 +13,12 @@ type Handler struct {
 }
 
 type createPlanRequest struct {
-	ProviderID  int64   `json:"provider_id" binding:"required"`
-	Name        string  `json:"name" binding:"required"`
-	Description string  `json:"description" binding:"required"`
-	Price       float64 `json:"price" binding:"required"`
-	Discount    float64 `json:"discount" binding:"required"`
-	IsActive    bool    `json:"is_active"`
+	ProviderID  *int64   `json:"provider_id" binding:"required"`
+	Name        string   `json:"name" binding:"required"`
+	Description string   `json:"description" binding:"required"`
+	Price       *float64 `json:"price" binding:"required"`
+	Discount    *float64 `json:"discount" binding:"required"`
+	IsActive    *bool    `json:"is_active" binding:"required"`
 }
 
 type updatePlanRequest struct {
@@ -66,12 +66,12 @@ func (h *Handler) CreatePlan(c *gin.Context) {
 	}
 
 	plan, err := h.service.Create(c.Request.Context(), CreateInput{
-		ProviderID:  req.ProviderID,
+		ProviderID:  *req.ProviderID,
 		Name:        req.Name,
 		Description: req.Description,
-		Price:       req.Price,
-		Discount:    req.Discount,
-		IsActive:    req.IsActive,
+		Price:       *req.Price,
+		Discount:    *req.Discount,
+		IsActive:    *req.IsActive,
 	})
 	if err != nil {
 		h.handleServiceError(c, err)

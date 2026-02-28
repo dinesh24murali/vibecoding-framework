@@ -50,6 +50,8 @@ func (h *Handler) CreateServiceRequestAndPayment(c *gin.Context) {
 			respondError(c, http.StatusNotFound, "RESOURCE_NOT_FOUND", "provider or plan not found")
 		case errors.Is(err, ErrConflict):
 			respondError(c, http.StatusConflict, "CONFLICT_DUPLICATE", "conflicting customer record")
+		case errors.Is(err, ErrCaptchaFailed):
+			respondError(c, http.StatusUnprocessableEntity, "CAPTCHA_FAILED", "Please try after some time")
 		default:
 			respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		}

@@ -7,21 +7,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dinesh/vibecoding-framework/backend/internal/captcha"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/servicerequests"
 	"gorm.io/gorm"
 )
 
 var (
-	ErrInvalidInput = errors.New("invalid checkout input")
-	ErrNotFound     = errors.New("resource not found")
-	ErrConflict     = errors.New("checkout conflict")
+	ErrInvalidInput  = errors.New("invalid checkout input")
+	ErrNotFound      = errors.New("resource not found")
+	ErrConflict      = errors.New("checkout conflict")
+	ErrCaptchaFailed = errors.New("Please try after some time")
 )
+
+type captchaVerifier interface {
+	Verify(ctx context.Context, token string) error
+}
 
 type Service struct {
 	db                 *gorm.DB
 	plansRepo          *plans.Repository
 	serviceRequestRepo *servicerequests.Repository
+	captcha            captchaVerifier
 }
 
 type CreateCheckoutInput struct {
@@ -66,13 +73,21 @@ func (userRow) TableName() string {
 	return "users"
 }
 
-func NewService(db *gorm.DB, plansRepo *plans.Repository, serviceRequestRepo *servicerequests.Repository) *Service {
-	return &Service{db: db, plansRepo: plansRepo, serviceRequestRepo: serviceRequestRepo}
+func NewService(db *gorm.DB, plansRepo *plans.Repository, serviceRequestRepo *servicerequests.Repository, captchaService captchaVerifier) *Service {
+	return &Service{db: db, plansRepo: plansRepo, serviceRequestRepo: serviceRequestRepo, captcha: captchaService}
 }
 
 func (s *Service) CreateServiceRequestAndPayment(ctx context.Context, input CreateCheckoutInput) (*CreateCheckoutResult, error) {
 	if err := validateInput(input); err != nil {
 		return nil, err
+	}
+
+	if err := s.captcha.Verify(ctx, input.RecaptchaToken); err != nil {
+		if errors.Is(err, captcha.ErrCaptchaFailed) {
+			return nil, ErrCaptchaFailed
+		}
+
+		return nil, fmt.Errorf("verify recaptcha: %w", err)
 	}
 
 	plan, err := s.plansRepo.FindActiveByID(ctx, input.PlanID)

@@ -156,8 +156,8 @@ paths:
             examples:
               default:
                 value:
-                  provider_id: "pro_1"
-                  plan_id: "pln_1"
+                  provider_id: 1
+                  plan_id: 1
                   customer:
                     name: "Kumar"
                     phone_number: "9000000002"
@@ -960,9 +960,11 @@ components:
       required: [provider_id, plan_id, customer, recaptcha_token]
       properties:
         provider_id:
-          type: string
+          type: integer
+          minimum: 1
         plan_id:
-          type: string
+          type: integer
+          minimum: 1
         customer:
           type: object
           required: [name, phone_number]

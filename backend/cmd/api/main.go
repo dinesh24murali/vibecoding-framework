@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dinesh/vibecoding-framework/backend/internal/auth"
+	"github.com/dinesh/vibecoding-framework/backend/internal/captcha"
 	"github.com/dinesh/vibecoding-framework/backend/internal/checkout"
 	"github.com/dinesh/vibecoding-framework/backend/internal/config"
 	"github.com/dinesh/vibecoding-framework/backend/internal/db"
@@ -58,8 +59,10 @@ func main() {
 	planRepo := plans.NewRepository(gormDB)
 	planService := plans.NewService(planRepo)
 	planHandler := plans.NewHandler(planService)
+	captchaClient := captcha.NewGoogleClient(cfg.Recaptcha.SecretKey)
+	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore)
 	serviceRequestRepo := servicerequests.NewRepository(gormDB)
-	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo)
+	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService)
 	checkoutHandler := checkout.NewHandler(checkoutService)
 	adminAuthMiddleware := middleware.AdminAuth(func(token string) (string, string, error) {
 		claims, verifyErr := tokenManager.VerifyAccessToken(token)

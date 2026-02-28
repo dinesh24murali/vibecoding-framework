@@ -39,6 +39,19 @@ func TestCreatePlanHandler(t *testing.T) {
 	}
 }
 
+func TestCreatePlanHandlerAllowsZeroDiscount(t *testing.T) {
+	r := setupPlanRouter(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/plans", bytes.NewBufferString(`{"provider_id":1,"name":"T20 Cricket Plan","description":"T20 Cricket Plan","price":421.5,"discount":0.0,"is_active":true}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d body=%s", resp.Code, http.StatusCreated, resp.Body.String())
+	}
+}
+
 func TestGetAndDeletePlanHandler(t *testing.T) {
 	r := setupPlanRouter(t)
 

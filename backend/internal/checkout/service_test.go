@@ -2,15 +2,25 @@ package checkout
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/dinesh/vibecoding-framework/backend/internal/captcha"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/servicerequests"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func newCheckoutService(t *testing.T) *Service {
+type fakeCaptchaVerifier struct {
+	err error
+}
+
+func (f fakeCaptchaVerifier) Verify(_ context.Context, _ string) error {
+	return f.err
+}
+
+func newCheckoutService(t *testing.T, verifier captchaVerifier) *Service {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -38,11 +48,11 @@ func newCheckoutService(t *testing.T) *Service {
 		t.Fatalf("seed plan: %v", err)
 	}
 
-	return NewService(db, plans.NewRepository(db), servicerequests.NewRepository(db))
+	return NewService(db, plans.NewRepository(db), servicerequests.NewRepository(db), verifier)
 }
 
 func TestCreateServiceRequestAndPaymentSuccess(t *testing.T) {
-	service := newCheckoutService(t)
+	service := newCheckoutService(t, fakeCaptchaVerifier{})
 
 	result, err := service.CreateServiceRequestAndPayment(context.Background(), CreateCheckoutInput{
 		ProviderID:     1,
@@ -66,7 +76,7 @@ func TestCreateServiceRequestAndPaymentSuccess(t *testing.T) {
 }
 
 func TestCreateServiceRequestAndPaymentNotFound(t *testing.T) {
-	service := newCheckoutService(t)
+	service := newCheckoutService(t, fakeCaptchaVerifier{})
 
 	_, err := service.CreateServiceRequestAndPayment(context.Background(), CreateCheckoutInput{
 		ProviderID:     2,
@@ -78,5 +88,21 @@ func TestCreateServiceRequestAndPaymentNotFound(t *testing.T) {
 	})
 	if err != ErrNotFound {
 		t.Fatalf("error = %v, want %v", err, ErrNotFound)
+	}
+}
+
+func TestCreateServiceRequestAndPaymentCaptchaRejected(t *testing.T) {
+	service := newCheckoutService(t, fakeCaptchaVerifier{err: captcha.ErrCaptchaFailed})
+
+	_, err := service.CreateServiceRequestAndPayment(context.Background(), CreateCheckoutInput{
+		ProviderID:     1,
+		PlanID:         1,
+		CustomerName:   "Kumar",
+		CustomerPhone:  "9000000002",
+		RecaptchaToken: "token-token",
+		IdempotencyKey: "idem-1",
+	})
+	if !errors.Is(err, ErrCaptchaFailed) {
+		t.Fatalf("error = %v, want %v", err, ErrCaptchaFailed)
 	}
 }

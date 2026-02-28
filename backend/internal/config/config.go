@@ -22,6 +22,7 @@ type Config struct {
 	DB               DBConfig
 	SeedAdmin        SeedAdminConfig
 	JWT              JWTConfig
+	Recaptcha        RecaptchaConfig
 }
 
 type DBConfig struct {
@@ -44,6 +45,11 @@ type JWTConfig struct {
 	RefreshSecret string
 	AccessTTL     time.Duration
 	RefreshTTL    time.Duration
+}
+
+type RecaptchaConfig struct {
+	SecretKey string
+	MinScore  float64
 }
 
 func Load() (Config, error) {
@@ -77,6 +83,10 @@ func Load() (Config, error) {
 			RefreshSecret: getEnv("JWT_REFRESH_SECRET", "replace_with_strong_secret_at_least_32_chars"),
 			AccessTTL:     getEnvDuration("JWT_ACCESS_TTL", 240*time.Hour),
 			RefreshTTL:    getEnvDuration("JWT_REFRESH_TTL", 2160*time.Hour),
+		},
+		Recaptcha: RecaptchaConfig{
+			SecretKey: getEnv("RECAPTCHA_SECRET_KEY", "xxx"),
+			MinScore:  getEnvFloat("RECAPTCHA_MIN_SCORE", 0.5),
 		},
 	}
 
@@ -144,6 +154,14 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid JWT_REFRESH_TTL: %s", cfg.JWT.RefreshTTL)
 	}
 
+	if cfg.Recaptcha.SecretKey == "" {
+		return Config{}, fmt.Errorf("invalid RECAPTCHA_SECRET_KEY: empty")
+	}
+
+	if cfg.Recaptcha.MinScore <= 0 || cfg.Recaptcha.MinScore > 1 {
+		return Config{}, fmt.Errorf("invalid RECAPTCHA_MIN_SCORE: %f", cfg.Recaptcha.MinScore)
+	}
+
 	if cfg.ShutdownTimeout <= 0 {
 		return Config{}, fmt.Errorf("invalid SHUTDOWN_TIMEOUT: %s", cfg.ShutdownTimeout)
 	}
@@ -185,6 +203,20 @@ func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
 	}
 
 	value, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultValue
+	}
+
+	return value
+}
+
+func getEnvFloat(key string, defaultValue float64) float64 {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
 		return defaultValue
 	}

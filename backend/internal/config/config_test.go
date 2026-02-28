@@ -28,6 +28,8 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("JWT_REFRESH_SECRET", "")
 	t.Setenv("JWT_ACCESS_TTL", "")
 	t.Setenv("JWT_REFRESH_TTL", "")
+	t.Setenv("RECAPTCHA_SECRET_KEY", "")
+	t.Setenv("RECAPTCHA_MIN_SCORE", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -113,6 +115,14 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.JWT.RefreshTTL != 2160*time.Hour {
 		t.Fatalf("JWT.RefreshTTL = %s, want %s", cfg.JWT.RefreshTTL, 2160*time.Hour)
 	}
+
+	if cfg.Recaptcha.SecretKey != "xxx" {
+		t.Fatalf("Recaptcha.SecretKey = %q, want %q", cfg.Recaptcha.SecretKey, "xxx")
+	}
+
+	if cfg.Recaptcha.MinScore != 0.5 {
+		t.Fatalf("Recaptcha.MinScore = %f, want %f", cfg.Recaptcha.MinScore, 0.5)
+	}
 }
 
 func TestLoadFromEnvironment(t *testing.T) {
@@ -136,6 +146,8 @@ func TestLoadFromEnvironment(t *testing.T) {
 	t.Setenv("JWT_REFRESH_SECRET", "refresh-secret")
 	t.Setenv("JWT_ACCESS_TTL", "24h")
 	t.Setenv("JWT_REFRESH_TTL", "720h")
+	t.Setenv("RECAPTCHA_SECRET_KEY", "captcha-secret")
+	t.Setenv("RECAPTCHA_MIN_SCORE", "0.7")
 
 	cfg, err := Load()
 	if err != nil {
@@ -220,6 +232,14 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	if cfg.JWT.RefreshTTL != 720*time.Hour {
 		t.Fatalf("JWT.RefreshTTL = %s, want %s", cfg.JWT.RefreshTTL, 720*time.Hour)
+	}
+
+	if cfg.Recaptcha.SecretKey != "captcha-secret" {
+		t.Fatalf("Recaptcha.SecretKey = %q, want %q", cfg.Recaptcha.SecretKey, "captcha-secret")
+	}
+
+	if cfg.Recaptcha.MinScore != 0.7 {
+		t.Fatalf("Recaptcha.MinScore = %f, want %f", cfg.Recaptcha.MinScore, 0.7)
 	}
 }
 
