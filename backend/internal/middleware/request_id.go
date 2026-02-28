@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
+	apperrors "github.com/dinesh/vibecoding-framework/backend/internal/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,13 +26,22 @@ func RequestID() gin.HandlerFunc {
 
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, _ any) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"error": gin.H{
-				"code":    "INTERNAL_ERROR",
-				"message": "internal server error",
-			},
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, apperrors.NewInternal(getRequestID(c)))
 	})
+}
+
+func getRequestID(c *gin.Context) string {
+	requestID, exists := c.Get("request_id")
+	if !exists {
+		return ""
+	}
+
+	value, ok := requestID.(string)
+	if !ok {
+		return ""
+	}
+
+	return value
 }
 
 func randomID() string {

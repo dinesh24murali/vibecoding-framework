@@ -10,6 +10,7 @@ import (
 type Config struct {
 	AppEnv           string
 	APIBasePath      string
+	OpenAPISpecPath  string
 	APIPort          int
 	WorkerHealthPort int
 	ShutdownTimeout  time.Duration
@@ -19,6 +20,7 @@ func Load() (Config, error) {
 	cfg := Config{
 		AppEnv:           getEnv("APP_ENV", "local"),
 		APIBasePath:      getEnv("API_BASE_PATH", "/api/v1"),
+		OpenAPISpecPath:  getEnv("OPENAPI_SPEC_PATH", "api/openapi/openapi.yaml"),
 		APIPort:          getEnvInt("API_PORT", 8080),
 		WorkerHealthPort: getEnvInt("WORKER_HEALTH_PORT", 8081),
 		ShutdownTimeout:  getEnvDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
@@ -30,6 +32,10 @@ func Load() (Config, error) {
 
 	if cfg.WorkerHealthPort <= 0 {
 		return Config{}, fmt.Errorf("invalid WORKER_HEALTH_PORT: %d", cfg.WorkerHealthPort)
+	}
+
+	if cfg.OpenAPISpecPath == "" {
+		return Config{}, fmt.Errorf("invalid OPENAPI_SPEC_PATH: empty")
 	}
 
 	if cfg.ShutdownTimeout <= 0 {

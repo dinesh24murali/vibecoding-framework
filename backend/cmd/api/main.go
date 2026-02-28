@@ -20,9 +20,14 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
+	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath)
+	if err != nil {
+		log.Fatalf("init router: %v", err)
+	}
+
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.APIPort),
-		Handler:           router.New(cfg.APIBasePath),
+		Handler:           engine,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
