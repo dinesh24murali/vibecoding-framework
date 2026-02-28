@@ -21,6 +21,9 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("DB_USER", "")
 	t.Setenv("DB_PASSWORD", "")
 	t.Setenv("DB_SSLMODE", "")
+	t.Setenv("SEED_ADMIN_USERNAME", "")
+	t.Setenv("SEED_ADMIN_PHONE", "")
+	t.Setenv("SEED_ADMIN_PASSWORD", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -78,6 +81,18 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.DB.SSLMode != "disable" {
 		t.Fatalf("DB.SSLMode = %q, want %q", cfg.DB.SSLMode, "disable")
 	}
+
+	if cfg.SeedAdmin.Username != "admin" {
+		t.Fatalf("SeedAdmin.Username = %q, want %q", cfg.SeedAdmin.Username, "admin")
+	}
+
+	if cfg.SeedAdmin.Phone != "9000000001" {
+		t.Fatalf("SeedAdmin.Phone = %q, want %q", cfg.SeedAdmin.Phone, "9000000001")
+	}
+
+	if cfg.SeedAdmin.Password != "ChangeThisImmediately123!" {
+		t.Fatalf("SeedAdmin.Password = %q, want %q", cfg.SeedAdmin.Password, "ChangeThisImmediately123!")
+	}
 }
 
 func TestLoadFromEnvironment(t *testing.T) {
@@ -94,6 +109,9 @@ func TestLoadFromEnvironment(t *testing.T) {
 	t.Setenv("DB_USER", "dth_admin")
 	t.Setenv("DB_PASSWORD", "secret")
 	t.Setenv("DB_SSLMODE", "require")
+	t.Setenv("SEED_ADMIN_USERNAME", "super-admin")
+	t.Setenv("SEED_ADMIN_PHONE", "9000000099")
+	t.Setenv("SEED_ADMIN_PASSWORD", "UltraSecure123!")
 
 	cfg, err := Load()
 	if err != nil {
@@ -150,6 +168,18 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	if cfg.DB.SSLMode != "require" {
 		t.Fatalf("DB.SSLMode = %q, want %q", cfg.DB.SSLMode, "require")
+	}
+
+	if cfg.SeedAdmin.Username != "super-admin" {
+		t.Fatalf("SeedAdmin.Username = %q, want %q", cfg.SeedAdmin.Username, "super-admin")
+	}
+
+	if cfg.SeedAdmin.Phone != "9000000099" {
+		t.Fatalf("SeedAdmin.Phone = %q, want %q", cfg.SeedAdmin.Phone, "9000000099")
+	}
+
+	if cfg.SeedAdmin.Password != "UltraSecure123!" {
+		t.Fatalf("SeedAdmin.Password = %q, want %q", cfg.SeedAdmin.Password, "UltraSecure123!")
 	}
 }
 

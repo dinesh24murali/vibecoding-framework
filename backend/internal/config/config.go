@@ -20,6 +20,7 @@ type Config struct {
 	WorkerHealthPort int
 	ShutdownTimeout  time.Duration
 	DB               DBConfig
+	SeedAdmin        SeedAdminConfig
 }
 
 type DBConfig struct {
@@ -29,6 +30,12 @@ type DBConfig struct {
 	User     string
 	Password string
 	SSLMode  string
+}
+
+type SeedAdminConfig struct {
+	Username string
+	Phone    string
+	Password string
 }
 
 func Load() (Config, error) {
@@ -51,6 +58,11 @@ func Load() (Config, error) {
 			User:     getEnv("DB_USER", "dth_user"),
 			Password: getEnv("DB_PASSWORD", "dth_pass"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		SeedAdmin: SeedAdminConfig{
+			Username: getEnv("SEED_ADMIN_USERNAME", "admin"),
+			Phone:    getEnv("SEED_ADMIN_PHONE", "9000000001"),
+			Password: getEnv("SEED_ADMIN_PASSWORD", "ChangeThisImmediately123!"),
 		},
 	}
 
@@ -88,6 +100,18 @@ func Load() (Config, error) {
 
 	if cfg.DB.SSLMode == "" {
 		return Config{}, fmt.Errorf("invalid DB_SSLMODE: empty")
+	}
+
+	if cfg.SeedAdmin.Username == "" {
+		return Config{}, fmt.Errorf("invalid SEED_ADMIN_USERNAME: empty")
+	}
+
+	if cfg.SeedAdmin.Phone == "" {
+		return Config{}, fmt.Errorf("invalid SEED_ADMIN_PHONE: empty")
+	}
+
+	if cfg.SeedAdmin.Password == "" {
+		return Config{}, fmt.Errorf("invalid SEED_ADMIN_PASSWORD: empty")
 	}
 
 	if cfg.ShutdownTimeout <= 0 {
