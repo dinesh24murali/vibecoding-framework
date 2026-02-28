@@ -60,7 +60,7 @@ func main() {
 	planService := plans.NewService(planRepo)
 	planHandler := plans.NewHandler(planService)
 	captchaClient := captcha.NewGoogleClient(cfg.Recaptcha.SecretKey)
-	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore)
+	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore, cfg.Recaptcha.Enabled)
 	serviceRequestRepo := servicerequests.NewRepository(gormDB)
 	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService)
 	checkoutHandler := checkout.NewHandler(checkoutService)

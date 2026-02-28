@@ -48,6 +48,7 @@ type JWTConfig struct {
 }
 
 type RecaptchaConfig struct {
+	Enabled   bool
 	SecretKey string
 	MinScore  float64
 }
@@ -85,6 +86,7 @@ func Load() (Config, error) {
 			RefreshTTL:    getEnvDuration("JWT_REFRESH_TTL", 2160*time.Hour),
 		},
 		Recaptcha: RecaptchaConfig{
+			Enabled:   getEnvBool("RECAPTCHA_ENABLED", true),
 			SecretKey: getEnv("RECAPTCHA_SECRET_KEY", "xxx"),
 			MinScore:  getEnvFloat("RECAPTCHA_MIN_SCORE", 0.5),
 		},
@@ -154,11 +156,11 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid JWT_REFRESH_TTL: %s", cfg.JWT.RefreshTTL)
 	}
 
-	if cfg.Recaptcha.SecretKey == "" {
+	if cfg.Recaptcha.Enabled && cfg.Recaptcha.SecretKey == "" {
 		return Config{}, fmt.Errorf("invalid RECAPTCHA_SECRET_KEY: empty")
 	}
 
-	if cfg.Recaptcha.MinScore <= 0 || cfg.Recaptcha.MinScore > 1 {
+	if cfg.Recaptcha.Enabled && (cfg.Recaptcha.MinScore <= 0 || cfg.Recaptcha.MinScore > 1) {
 		return Config{}, fmt.Errorf("invalid RECAPTCHA_MIN_SCORE: %f", cfg.Recaptcha.MinScore)
 	}
 
@@ -217,6 +219,20 @@ func getEnvFloat(key string, defaultValue float64) float64 {
 	}
 
 	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return defaultValue
+	}
+
+	return value
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.ParseBool(raw)
 	if err != nil {
 		return defaultValue
 	}

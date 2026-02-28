@@ -10,15 +10,20 @@ import (
 var ErrCaptchaFailed = errors.New("Please try after some time")
 
 type Service struct {
+	enabled  bool
 	client   VerifyClient
 	minScore float64
 }
 
-func NewService(client VerifyClient, minScore float64) *Service {
-	return &Service{client: client, minScore: minScore}
+func NewService(client VerifyClient, minScore float64, enabled bool) *Service {
+	return &Service{enabled: enabled, client: client, minScore: minScore}
 }
 
 func (s *Service) Verify(ctx context.Context, token string) error {
+	if !s.enabled {
+		return nil
+	}
+
 	if strings.TrimSpace(token) == "" {
 		return ErrCaptchaFailed
 	}
