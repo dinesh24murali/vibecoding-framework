@@ -16,6 +16,7 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/config"
 	"github.com/dinesh/vibecoding-framework/backend/internal/db"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/payments"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/dinesh/vibecoding-framework/backend/internal/router"
@@ -59,11 +60,14 @@ func main() {
 	planRepo := plans.NewRepository(gormDB)
 	planService := plans.NewService(planRepo)
 	planHandler := plans.NewHandler(planService)
+	razorpayClient := payments.NewRazorpayClient(cfg.Razorpay.KeyID, cfg.Razorpay.KeySecret, cfg.Razorpay.WebhookSecret)
 	captchaClient := captcha.NewGoogleClient(cfg.Recaptcha.SecretKey)
 	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore, cfg.Recaptcha.Enabled)
 	serviceRequestRepo := servicerequests.NewRepository(gormDB)
-	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService)
+	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService, razorpayClient)
 	checkoutHandler := checkout.NewHandler(checkoutService)
+	paymentsService := payments.NewService(gormDB, razorpayClient, payments.NewRetryAuditRepo(gormDB), captchaService)
+	paymentsHandler := payments.NewHandler(paymentsService)
 	adminAuthMiddleware := middleware.AdminAuth(func(token string) (string, string, error) {
 		claims, verifyErr := tokenManager.VerifyAccessToken(token)
 		if verifyErr != nil {
@@ -76,6 +80,7 @@ func main() {
 	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath, router.Dependencies{
 		AuthHandler:         authHandler,
 		CheckoutHandler:     checkoutHandler,
+		PaymentsHandler:     paymentsHandler,
 		ProvidersHandler:    providerHandler,
 		PlansHandler:        planHandler,
 		AdminAuthMiddleware: adminAuthMiddleware,

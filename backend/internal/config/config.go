@@ -23,6 +23,7 @@ type Config struct {
 	SeedAdmin        SeedAdminConfig
 	JWT              JWTConfig
 	Recaptcha        RecaptchaConfig
+	Razorpay         RazorpayConfig
 }
 
 type DBConfig struct {
@@ -51,6 +52,12 @@ type RecaptchaConfig struct {
 	Enabled   bool
 	SecretKey string
 	MinScore  float64
+}
+
+type RazorpayConfig struct {
+	KeyID         string
+	KeySecret     string
+	WebhookSecret string
 }
 
 func Load() (Config, error) {
@@ -89,6 +96,11 @@ func Load() (Config, error) {
 			Enabled:   getEnvBool("RECAPTCHA_ENABLED", true),
 			SecretKey: getEnv("RECAPTCHA_SECRET_KEY", "xxx"),
 			MinScore:  getEnvFloat("RECAPTCHA_MIN_SCORE", 0.5),
+		},
+		Razorpay: RazorpayConfig{
+			KeyID:         getEnv("RAZORPAY_KEY_ID", "rzp_test_xxx"),
+			KeySecret:     getEnv("RAZORPAY_KEY_SECRET", "xxx"),
+			WebhookSecret: getEnv("RAZORPAY_WEBHOOK_SECRET", "xxx"),
 		},
 	}
 

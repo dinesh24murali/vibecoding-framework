@@ -31,6 +31,9 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("RECAPTCHA_ENABLED", "")
 	t.Setenv("RECAPTCHA_SECRET_KEY", "")
 	t.Setenv("RECAPTCHA_MIN_SCORE", "")
+	t.Setenv("RAZORPAY_KEY_ID", "")
+	t.Setenv("RAZORPAY_KEY_SECRET", "")
+	t.Setenv("RAZORPAY_WEBHOOK_SECRET", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -128,6 +131,18 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Recaptcha.MinScore != 0.5 {
 		t.Fatalf("Recaptcha.MinScore = %f, want %f", cfg.Recaptcha.MinScore, 0.5)
 	}
+
+	if cfg.Razorpay.KeyID != "rzp_test_xxx" {
+		t.Fatalf("Razorpay.KeyID = %q, want %q", cfg.Razorpay.KeyID, "rzp_test_xxx")
+	}
+
+	if cfg.Razorpay.KeySecret != "xxx" {
+		t.Fatalf("Razorpay.KeySecret = %q, want %q", cfg.Razorpay.KeySecret, "xxx")
+	}
+
+	if cfg.Razorpay.WebhookSecret != "xxx" {
+		t.Fatalf("Razorpay.WebhookSecret = %q, want %q", cfg.Razorpay.WebhookSecret, "xxx")
+	}
 }
 
 func TestLoadFromEnvironment(t *testing.T) {
@@ -154,6 +169,9 @@ func TestLoadFromEnvironment(t *testing.T) {
 	t.Setenv("RECAPTCHA_ENABLED", "false")
 	t.Setenv("RECAPTCHA_SECRET_KEY", "captcha-secret")
 	t.Setenv("RECAPTCHA_MIN_SCORE", "0.7")
+	t.Setenv("RAZORPAY_KEY_ID", "rzp_live_1")
+	t.Setenv("RAZORPAY_KEY_SECRET", "live-secret")
+	t.Setenv("RAZORPAY_WEBHOOK_SECRET", "webhook-secret")
 
 	cfg, err := Load()
 	if err != nil {
@@ -250,6 +268,18 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	if cfg.Recaptcha.MinScore != 0.7 {
 		t.Fatalf("Recaptcha.MinScore = %f, want %f", cfg.Recaptcha.MinScore, 0.7)
+	}
+
+	if cfg.Razorpay.KeyID != "rzp_live_1" {
+		t.Fatalf("Razorpay.KeyID = %q, want %q", cfg.Razorpay.KeyID, "rzp_live_1")
+	}
+
+	if cfg.Razorpay.KeySecret != "live-secret" {
+		t.Fatalf("Razorpay.KeySecret = %q, want %q", cfg.Razorpay.KeySecret, "live-secret")
+	}
+
+	if cfg.Razorpay.WebhookSecret != "webhook-secret" {
+		t.Fatalf("Razorpay.WebhookSecret = %q, want %q", cfg.Razorpay.WebhookSecret, "webhook-secret")
 	}
 }
 

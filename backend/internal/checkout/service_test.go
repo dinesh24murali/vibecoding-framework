@@ -16,6 +16,12 @@ type fakeCaptchaVerifier struct {
 	err error
 }
 
+type fakeOrderCreator struct{}
+
+func (fakeOrderCreator) CreateOrder(_ context.Context, _ float64, _ string, _ string) (string, error) {
+	return "order_test_1", nil
+}
+
 func (f fakeCaptchaVerifier) Verify(_ context.Context, _ string) error {
 	return f.err
 }
@@ -48,7 +54,7 @@ func newCheckoutService(t *testing.T, verifier captchaVerifier) *Service {
 		t.Fatalf("seed plan: %v", err)
 	}
 
-	return NewService(db, plans.NewRepository(db), servicerequests.NewRepository(db), verifier)
+	return NewService(db, plans.NewRepository(db), servicerequests.NewRepository(db), verifier, fakeOrderCreator{})
 }
 
 func TestCreateServiceRequestAndPaymentSuccess(t *testing.T) {

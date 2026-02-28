@@ -24,11 +24,16 @@ type captchaVerifier interface {
 	Verify(ctx context.Context, token string) error
 }
 
+type paymentOrderCreator interface {
+	CreateOrder(ctx context.Context, amount float64, currency string, receipt string) (string, error)
+}
+
 type Service struct {
 	db                 *gorm.DB
 	plansRepo          *plans.Repository
 	serviceRequestRepo *servicerequests.Repository
 	captcha            captchaVerifier
+	payments           paymentOrderCreator
 }
 
 type CreateCheckoutInput struct {
@@ -73,8 +78,8 @@ func (userRow) TableName() string {
 	return "users"
 }
 
-func NewService(db *gorm.DB, plansRepo *plans.Repository, serviceRequestRepo *servicerequests.Repository, captchaService captchaVerifier) *Service {
-	return &Service{db: db, plansRepo: plansRepo, serviceRequestRepo: serviceRequestRepo, captcha: captchaService}
+func NewService(db *gorm.DB, plansRepo *plans.Repository, serviceRequestRepo *servicerequests.Repository, captchaService captchaVerifier, paymentService paymentOrderCreator) *Service {
+	return &Service{db: db, plansRepo: plansRepo, serviceRequestRepo: serviceRequestRepo, captcha: captchaService, payments: paymentService}
 }
 
 func (s *Service) CreateServiceRequestAndPayment(ctx context.Context, input CreateCheckoutInput) (*CreateCheckoutResult, error) {
@@ -113,7 +118,10 @@ func (s *Service) CreateServiceRequestAndPayment(ctx context.Context, input Crea
 		amount = 0.01
 	}
 
-	orderID := fmt.Sprintf("order_%d", time.Now().UnixNano())
+	orderID, err := s.payments.CreateOrder(ctx, amount, "INR", fmt.Sprintf("sr_%d", serviceRequest.ID))
+	if err != nil {
+		return nil, fmt.Errorf("create razorpay order: %w", err)
+	}
 	if err := s.createPaymentAttempt(ctx, serviceRequest.ID, orderID, amount, input.IdempotencyKey); err != nil {
 		return nil, err
 	}

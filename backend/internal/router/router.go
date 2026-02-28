@@ -8,6 +8,7 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/checkout"
 	"github.com/dinesh/vibecoding-framework/backend/internal/http/contract"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/payments"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ import (
 type Dependencies struct {
 	AuthHandler         *auth.Handler
 	CheckoutHandler     *checkout.Handler
+	PaymentsHandler     *payments.Handler
 	ProvidersHandler    *providers.Handler
 	PlansHandler        *plans.Handler
 	AdminAuthMiddleware gin.HandlerFunc
@@ -54,6 +56,11 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 	}
 	if deps.CheckoutHandler != nil {
 		api.POST("/customer/checkout/service-requests", deps.CheckoutHandler.CreateServiceRequestAndPayment)
+	}
+	if deps.PaymentsHandler != nil {
+		api.POST("/customer/service-requests/:serviceRequestId/retry-payment", deps.PaymentsHandler.RetryPaymentForServiceRequest)
+		api.GET("/customer/service-requests/:serviceRequestId/payment-status", deps.PaymentsHandler.GetCustomerPaymentStatus)
+		api.POST("/payments/razorpay/callback", deps.PaymentsHandler.HandleRazorpayCallback)
 	}
 
 	admin := api.Group("/admin")
