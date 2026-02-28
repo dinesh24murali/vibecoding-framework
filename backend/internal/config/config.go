@@ -21,6 +21,7 @@ type Config struct {
 	ShutdownTimeout  time.Duration
 	DB               DBConfig
 	SeedAdmin        SeedAdminConfig
+	JWT              JWTConfig
 }
 
 type DBConfig struct {
@@ -36,6 +37,13 @@ type SeedAdminConfig struct {
 	Username string
 	Phone    string
 	Password string
+}
+
+type JWTConfig struct {
+	AccessSecret  string
+	RefreshSecret string
+	AccessTTL     time.Duration
+	RefreshTTL    time.Duration
 }
 
 func Load() (Config, error) {
@@ -63,6 +71,12 @@ func Load() (Config, error) {
 			Username: getEnv("SEED_ADMIN_USERNAME", "admin"),
 			Phone:    getEnv("SEED_ADMIN_PHONE", "9000000001"),
 			Password: getEnv("SEED_ADMIN_PASSWORD", "ChangeThisImmediately123!"),
+		},
+		JWT: JWTConfig{
+			AccessSecret:  getEnv("JWT_ACCESS_SECRET", "replace_with_strong_secret_at_least_32_chars"),
+			RefreshSecret: getEnv("JWT_REFRESH_SECRET", "replace_with_strong_secret_at_least_32_chars"),
+			AccessTTL:     getEnvDuration("JWT_ACCESS_TTL", 240*time.Hour),
+			RefreshTTL:    getEnvDuration("JWT_REFRESH_TTL", 2160*time.Hour),
 		},
 	}
 
@@ -112,6 +126,22 @@ func Load() (Config, error) {
 
 	if cfg.SeedAdmin.Password == "" {
 		return Config{}, fmt.Errorf("invalid SEED_ADMIN_PASSWORD: empty")
+	}
+
+	if cfg.JWT.AccessSecret == "" {
+		return Config{}, fmt.Errorf("invalid JWT_ACCESS_SECRET: empty")
+	}
+
+	if cfg.JWT.RefreshSecret == "" {
+		return Config{}, fmt.Errorf("invalid JWT_REFRESH_SECRET: empty")
+	}
+
+	if cfg.JWT.AccessTTL <= 0 {
+		return Config{}, fmt.Errorf("invalid JWT_ACCESS_TTL: %s", cfg.JWT.AccessTTL)
+	}
+
+	if cfg.JWT.RefreshTTL <= 0 {
+		return Config{}, fmt.Errorf("invalid JWT_REFRESH_TTL: %s", cfg.JWT.RefreshTTL)
 	}
 
 	if cfg.ShutdownTimeout <= 0 {

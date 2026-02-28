@@ -24,6 +24,10 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("SEED_ADMIN_USERNAME", "")
 	t.Setenv("SEED_ADMIN_PHONE", "")
 	t.Setenv("SEED_ADMIN_PASSWORD", "")
+	t.Setenv("JWT_ACCESS_SECRET", "")
+	t.Setenv("JWT_REFRESH_SECRET", "")
+	t.Setenv("JWT_ACCESS_TTL", "")
+	t.Setenv("JWT_REFRESH_TTL", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -93,6 +97,22 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.SeedAdmin.Password != "ChangeThisImmediately123!" {
 		t.Fatalf("SeedAdmin.Password = %q, want %q", cfg.SeedAdmin.Password, "ChangeThisImmediately123!")
 	}
+
+	if cfg.JWT.AccessSecret != "replace_with_strong_secret_at_least_32_chars" {
+		t.Fatalf("JWT.AccessSecret = %q, want default", cfg.JWT.AccessSecret)
+	}
+
+	if cfg.JWT.RefreshSecret != "replace_with_strong_secret_at_least_32_chars" {
+		t.Fatalf("JWT.RefreshSecret = %q, want default", cfg.JWT.RefreshSecret)
+	}
+
+	if cfg.JWT.AccessTTL != 240*time.Hour {
+		t.Fatalf("JWT.AccessTTL = %s, want %s", cfg.JWT.AccessTTL, 240*time.Hour)
+	}
+
+	if cfg.JWT.RefreshTTL != 2160*time.Hour {
+		t.Fatalf("JWT.RefreshTTL = %s, want %s", cfg.JWT.RefreshTTL, 2160*time.Hour)
+	}
 }
 
 func TestLoadFromEnvironment(t *testing.T) {
@@ -112,6 +132,10 @@ func TestLoadFromEnvironment(t *testing.T) {
 	t.Setenv("SEED_ADMIN_USERNAME", "super-admin")
 	t.Setenv("SEED_ADMIN_PHONE", "9000000099")
 	t.Setenv("SEED_ADMIN_PASSWORD", "UltraSecure123!")
+	t.Setenv("JWT_ACCESS_SECRET", "access-secret")
+	t.Setenv("JWT_REFRESH_SECRET", "refresh-secret")
+	t.Setenv("JWT_ACCESS_TTL", "24h")
+	t.Setenv("JWT_REFRESH_TTL", "720h")
 
 	cfg, err := Load()
 	if err != nil {
@@ -180,6 +204,22 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	if cfg.SeedAdmin.Password != "UltraSecure123!" {
 		t.Fatalf("SeedAdmin.Password = %q, want %q", cfg.SeedAdmin.Password, "UltraSecure123!")
+	}
+
+	if cfg.JWT.AccessSecret != "access-secret" {
+		t.Fatalf("JWT.AccessSecret = %q, want %q", cfg.JWT.AccessSecret, "access-secret")
+	}
+
+	if cfg.JWT.RefreshSecret != "refresh-secret" {
+		t.Fatalf("JWT.RefreshSecret = %q, want %q", cfg.JWT.RefreshSecret, "refresh-secret")
+	}
+
+	if cfg.JWT.AccessTTL != 24*time.Hour {
+		t.Fatalf("JWT.AccessTTL = %s, want %s", cfg.JWT.AccessTTL, 24*time.Hour)
+	}
+
+	if cfg.JWT.RefreshTTL != 720*time.Hour {
+		t.Fatalf("JWT.RefreshTTL = %s, want %s", cfg.JWT.RefreshTTL, 720*time.Hour)
 	}
 }
 

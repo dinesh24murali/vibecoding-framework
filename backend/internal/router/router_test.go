@@ -10,7 +10,7 @@ import (
 
 func TestHealthEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	engine, err := New("/api/v1", "production", "")
+	engine, err := New("/api/v1", "production", "", Dependencies{})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}

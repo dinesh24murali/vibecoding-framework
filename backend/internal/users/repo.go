@@ -51,3 +51,18 @@ func (r *Repository) CreateAdmin(ctx context.Context, input CreateAdminInput) (i
 
 	return admin.ID, nil
 }
+
+func (r *Repository) FindAdminByUsername(ctx context.Context, username string) (*User, error) {
+	user, err := gorm.G[User](r.Db.WithContext(ctx)).
+		Where("name = ? AND role = ?", username, "admin").
+		Take(ctx)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("query admin by username: %w", err)
+	}
+
+	return &user, nil
+}
