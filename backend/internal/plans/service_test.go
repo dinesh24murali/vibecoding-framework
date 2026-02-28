@@ -101,3 +101,42 @@ func TestPlanProviderLimit(t *testing.T) {
 		t.Fatalf("overflow error = %v, want %v", err, ErrPlanLimitExceeded)
 	}
 }
+
+func TestPlanUpsertByProviderAndName(t *testing.T) {
+	service := newPlanTestService(t)
+
+	err := service.UpsertByProviderAndName(context.Background(), CreateInput{
+		ProviderID:  1,
+		Name:        "Family Pack",
+		Description: "Initial",
+		Price:       250,
+		Discount:    20,
+		IsActive:    true,
+	})
+	if err != nil {
+		t.Fatalf("UpsertByProviderAndName() create error = %v", err)
+	}
+
+	err = service.UpsertByProviderAndName(context.Background(), CreateInput{
+		ProviderID:  1,
+		Name:        "Family Pack",
+		Description: "Updated",
+		Price:       275,
+		Discount:    25,
+		IsActive:    false,
+	})
+	if err != nil {
+		t.Fatalf("UpsertByProviderAndName() update error = %v", err)
+	}
+
+	plans, _, err := service.ListAdmin(context.Background(), 1, 20, nil, nil, "")
+	if err != nil {
+		t.Fatalf("ListAdmin() error = %v", err)
+	}
+	if len(plans) != 1 {
+		t.Fatalf("plan count = %d, want 1", len(plans))
+	}
+	if plans[0].Description != "Updated" || plans[0].Price != 275 || plans[0].Discount != 25 || plans[0].IsActive {
+		t.Fatalf("unexpected upserted plan: %+v", plans[0])
+	}
+}

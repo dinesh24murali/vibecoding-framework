@@ -1,0 +1,4 @@
+provider_id,name,description,price,discount,is_active
+1,Family Pack,120 channels with regional mix,299.00,20.00,true
+1,Sports HD,Premium sports channels with HD feed,499.00,50.00,true
+2,Budget Lite,Essential channels for small households,199.00,0.00,false

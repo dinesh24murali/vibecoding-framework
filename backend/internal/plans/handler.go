@@ -1,15 +1,18 @@
 package plans
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
+	csvimport "github.com/dinesh/vibecoding-framework/backend/internal/csv"
 	apperrors "github.com/dinesh/vibecoding-framework/backend/internal/errors"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	service *Service
+	service  *Service
+	importer *csvimport.PlansImporter
 }
 
 type createPlanRequest struct {
@@ -38,7 +41,10 @@ type paginatedPlansResponse struct {
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:  service,
+		importer: csvimport.NewPlansImporter(planImportJob{service: service}),
+	}
 }
 
 func (h *Handler) ListAdminPlans(c *gin.Context) {
@@ -160,6 +166,49 @@ func (h *Handler) ListCustomerPlansByProvider(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+func (h *Handler) UploadPlansCSV(c *gin.Context) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+		return
+	}
+	defer file.Close()
+
+	result, err := h.importer.Import(c.Request.Context(), file)
+	if err != nil {
+		if err == csvimport.ErrInvalidCSVFile {
+			respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+			return
+		}
+
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+type planImportJob struct {
+	service *Service
+}
+
+func (j planImportJob) UpsertPlan(ctx context.Context, row csvimport.PlanImportRow) error {
+	return j.service.UpsertByProviderAndName(ctx, CreateInput{
+		ProviderID:  row.ProviderID,
+		Name:        row.Name,
+		Description: row.Description,
+		Price:       row.Price,
+		Discount:    row.Discount,
+		IsActive:    row.IsActive,
+	})
 }
 
 func (h *Handler) handleServiceError(c *gin.Context, err error) {

@@ -77,6 +77,22 @@ func (r *Repository) FindActiveByID(ctx context.Context, id int64) (*Plan, error
 	return &plan, nil
 }
 
+func (r *Repository) FindActiveByProviderAndName(ctx context.Context, providerID int64, name string) (*Plan, error) {
+	var plan Plan
+	err := r.Db.WithContext(ctx).
+		Where("provider_id = ? AND LOWER(name) = LOWER(?) AND deleted_at IS NULL", providerID, strings.TrimSpace(name)).
+		First(&plan).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("find plan by provider and name: %w", err)
+	}
+
+	return &plan, nil
+}
+
 func (r *Repository) ExistsActiveByProviderAndName(ctx context.Context, providerID int64, name string, excludeID *int64) (bool, error) {
 	query := r.Db.WithContext(ctx).Model(&Plan{}).
 		Where("provider_id = ? AND LOWER(name) = LOWER(?) AND deleted_at IS NULL", providerID, strings.TrimSpace(name))

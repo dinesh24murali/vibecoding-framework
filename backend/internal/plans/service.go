@@ -217,6 +217,31 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (s *Service) UpsertByProviderAndName(ctx context.Context, input CreateInput) error {
+	if err := validateCreateInput(input); err != nil {
+		return err
+	}
+
+	existing, err := s.repo.FindActiveByProviderAndName(ctx, input.ProviderID, input.Name)
+	if err != nil {
+		return err
+	}
+
+	if existing == nil {
+		_, createErr := s.Create(ctx, input)
+		return createErr
+	}
+
+	updateInput := UpdateInput{
+		Description: &input.Description,
+		Price:       &input.Price,
+		Discount:    &input.Discount,
+		IsActive:    &input.IsActive,
+	}
+	_, err = s.Update(ctx, existing.ID, updateInput)
+	return err
+}
+
 func validateCreateInput(input CreateInput) error {
 	if input.ProviderID <= 0 {
 		return ErrPlanValidation
