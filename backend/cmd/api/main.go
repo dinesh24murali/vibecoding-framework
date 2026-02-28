@@ -19,6 +19,7 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/payments"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
+	"github.com/dinesh/vibecoding-framework/backend/internal/queue"
 	"github.com/dinesh/vibecoding-framework/backend/internal/router"
 	"github.com/dinesh/vibecoding-framework/backend/internal/servicerequests"
 	"github.com/dinesh/vibecoding-framework/backend/internal/users"
@@ -64,7 +65,7 @@ func main() {
 	captchaClient := captcha.NewGoogleClient(cfg.Recaptcha.SecretKey)
 	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore, cfg.Recaptcha.Enabled)
 	serviceRequestRepo := servicerequests.NewRepository(gormDB)
-	serviceRequestService := servicerequests.NewService(gormDB)
+	serviceRequestService := servicerequests.NewService(gormDB).WithSMSQueue(queue.NewAsynq(gormDB))
 	serviceRequestHandler := servicerequests.NewHandler(serviceRequestService)
 	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService, razorpayClient)
 	checkoutHandler := checkout.NewHandler(checkoutService)

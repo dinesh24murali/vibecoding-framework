@@ -2,6 +2,7 @@ package providers
 
 import (
 	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -22,6 +23,7 @@ func setupProviderRouter(t *testing.T) (*gin.Engine, *Service, *gorm.DB) {
 	r.GET("/admin/providers/:providerId", handler.GetProviderByID)
 	r.PATCH("/admin/providers/:providerId", handler.UpdateProvider)
 	r.DELETE("/admin/providers/:providerId", handler.DeleteProvider)
+	r.POST("/admin/providers/csv-upload", handler.UploadProvidersCSV)
 
 	return r, service, db
 }
@@ -83,5 +85,46 @@ func TestDeleteProviderHandler(t *testing.T) {
 
 	if getResp.Code != http.StatusNotFound {
 		t.Fatalf("get after delete status = %d, want %d", getResp.Code, http.StatusNotFound)
+	}
+}
+
+func TestUploadProvidersCSVHandler(t *testing.T) {
+	r, _, _ := setupProviderRouter(t)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	fileWriter, err := writer.CreateFormFile("file", "providers.csv")
+	if err != nil {
+		t.Fatalf("create form file: %v", err)
+	}
+	if _, err := fileWriter.Write([]byte("name,image_url\nAirtel DTH,https://img.test/a.png\n")); err != nil {
+		t.Fatalf("write csv: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/providers/csv-upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	resp := httptest.NewRecorder()
+
+	r.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d body=%s", resp.Code, http.StatusOK, resp.Body.String())
+	}
+}
+
+func TestUploadProvidersCSVHandlerValidation(t *testing.T) {
+	r, _, _ := setupProviderRouter(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/providers/csv-upload", bytes.NewBufferString(""))
+	req.Header.Set("Content-Type", "multipart/form-data")
+	resp := httptest.NewRecorder()
+
+	r.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d", resp.Code, http.StatusUnprocessableEntity)
 	}
 }

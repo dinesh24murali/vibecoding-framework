@@ -61,6 +61,20 @@ func (r *Repository) FindActiveByID(ctx context.Context, id int64) (*Provider, e
 	return &provider, nil
 }
 
+func (r *Repository) FindActiveByName(ctx context.Context, name string) (*Provider, error) {
+	var provider Provider
+	err := r.Db.WithContext(ctx).Where("LOWER(name) = LOWER(?) AND deleted_at IS NULL", strings.TrimSpace(name)).First(&provider).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("find provider by name: %w", err)
+	}
+
+	return &provider, nil
+}
+
 func (r *Repository) ExistsActiveByName(ctx context.Context, name string, excludeID *int64) (bool, error) {
 	query := r.Db.WithContext(ctx).Model(&Provider{}).Where("LOWER(name) = LOWER(?) AND deleted_at IS NULL", strings.TrimSpace(name))
 	if excludeID != nil {

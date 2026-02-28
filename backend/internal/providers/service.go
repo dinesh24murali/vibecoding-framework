@@ -137,3 +137,28 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (s *Service) UpsertByName(ctx context.Context, name string, imageURL *string) error {
+	cleanName := strings.TrimSpace(name)
+	if cleanName == "" || len(cleanName) > 120 {
+		return ErrProviderValidation
+	}
+
+	provider, err := s.repo.FindActiveByName(ctx, cleanName)
+	if err != nil {
+		return err
+	}
+
+	if provider == nil {
+		_, err := s.Create(ctx, CreateInput{Name: cleanName, ImageURL: imageURL})
+		return err
+	}
+
+	provider.Name = cleanName
+	provider.ImageURL = imageURL
+	if err := s.repo.Db.WithContext(ctx).Save(provider).Error; err != nil {
+		return fmt.Errorf("upsert provider: %w", err)
+	}
+
+	return nil
+}

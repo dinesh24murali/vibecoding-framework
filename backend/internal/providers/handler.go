@@ -1,15 +1,18 @@
 package providers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
+	csvimport "github.com/dinesh/vibecoding-framework/backend/internal/csv"
 	apperrors "github.com/dinesh/vibecoding-framework/backend/internal/errors"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	service *Service
+	service  *Service
+	importer *csvimport.ProvidersImporter
 }
 
 type createProviderRequest struct {
@@ -30,7 +33,10 @@ type paginatedProvidersResponse struct {
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:  service,
+		importer: csvimport.NewProvidersImporter(providerImportJob{service: service}),
+	}
 }
 
 func (h *Handler) ListAdminProviders(c *gin.Context) {
@@ -158,6 +164,42 @@ func (h *Handler) ListCustomerProviders(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+func (h *Handler) UploadProvidersCSV(c *gin.Context) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+		return
+	}
+	defer file.Close()
+
+	result, err := h.importer.Import(c.Request.Context(), file)
+	if err != nil {
+		if err == csvimport.ErrInvalidCSVFile {
+			respondError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "invalid request payload")
+			return
+		}
+
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+type providerImportJob struct {
+	service *Service
+}
+
+func (j providerImportJob) UpsertProvider(ctx context.Context, row csvimport.ProviderImportRow) error {
+	return j.service.UpsertByName(ctx, row.Name, row.ImageURL)
 }
 
 func respondError(c *gin.Context, status int, code string, message string) {

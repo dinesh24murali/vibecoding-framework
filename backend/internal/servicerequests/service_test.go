@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/dinesh/vibecoding-framework/backend/internal/queue"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -28,6 +29,9 @@ func newServiceRequestsService(t *testing.T) (*Service, *gorm.DB) {
 	}
 	if err := db.Exec(`CREATE TABLE service_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, plan_id INTEGER NOT NULL, status TEXT NOT NULL, created_at DATETIME, updated_at DATETIME, deleted_at DATETIME);`).Error; err != nil {
 		t.Fatalf("create service_requests: %v", err)
+	}
+	if err := db.Exec(`CREATE TABLE sms_notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, service_request_id INTEGER NOT NULL, phone_number TEXT NOT NULL, template TEXT NOT NULL, status TEXT NOT NULL, attempt_count INTEGER NOT NULL DEFAULT 0, last_error TEXT, sent_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);`).Error; err != nil {
+		t.Fatalf("create sms_notifications: %v", err)
 	}
 
 	if err := db.Exec(`INSERT INTO users (id, name, phone_number, role, status, created_at, updated_at) VALUES (1, 'Asha', '9000000002', 'customer', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).Error; err != nil {
@@ -64,6 +68,23 @@ func TestUpdateStatusSuccess(t *testing.T) {
 	}
 	if updated.Status != StatusCompleted {
 		t.Fatalf("status = %q, want %q", updated.Status, StatusCompleted)
+	}
+}
+
+func TestUpdateStatusEnqueuesSMSOnCompleted(t *testing.T) {
+	svc, db := newServiceRequestsService(t)
+	svc.WithSMSQueue(queue.NewAsynq(db))
+
+	if _, err := svc.UpdateStatus(context.Background(), 1, StatusCompleted); err != nil {
+		t.Fatalf("UpdateStatus() error = %v", err)
+	}
+
+	var count int64
+	if err := db.Table("sms_notifications").Where("service_request_id = ?", 1).Count(&count).Error; err != nil {
+		t.Fatalf("count sms_notifications: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("sms count = %d, want 1", count)
 	}
 }
 

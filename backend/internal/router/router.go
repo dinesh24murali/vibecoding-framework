@@ -78,6 +78,7 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 		admin.GET("/providers/:providerId", deps.ProvidersHandler.GetProviderByID)
 		admin.PATCH("/providers/:providerId", deps.ProvidersHandler.UpdateProvider)
 		admin.DELETE("/providers/:providerId", deps.ProvidersHandler.DeleteProvider)
+		admin.POST("/providers/csv-upload", deps.ProvidersHandler.UploadProvidersCSV)
 	}
 	if deps.PlansHandler != nil {
 		admin.GET("/plans", deps.PlansHandler.ListAdminPlans)

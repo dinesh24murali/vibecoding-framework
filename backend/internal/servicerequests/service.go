@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dinesh/vibecoding-framework/backend/internal/notifications"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,12 @@ var (
 )
 
 type Service struct {
-	db *gorm.DB
+	db       *gorm.DB
+	smsQueue smsJobQueue
+}
+
+type smsJobQueue interface {
+	EnqueueCompleted(ctx context.Context, tx *gorm.DB, serviceRequestID int64, phoneNumber string, template string) error
 }
 
 type ListAdminInput struct {
@@ -78,6 +84,11 @@ type ServiceRequestDetailsResponse struct {
 
 func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
+}
+
+func (s *Service) WithSMSQueue(jobQueue smsJobQueue) *Service {
+	s.smsQueue = jobQueue
+	return s
 }
 
 func (s *Service) ListAdmin(ctx context.Context, input ListAdminInput) ([]ServiceRequestResponse, int64, error) {
@@ -280,6 +291,18 @@ func (s *Service) UpdateStatus(ctx context.Context, id int64, targetStatus strin
 			if err := tx.Where("id = ?", id).Take(&updated).Error; err != nil {
 				return fmt.Errorf("reload updated service request: %w", err)
 			}
+
+			if targetStatus == StatusCompleted && s.smsQueue != nil {
+				phoneNumber, phoneErr := s.lookupUserPhone(ctx, tx, updated.UserID)
+				if phoneErr != nil {
+					return phoneErr
+				}
+
+				template := fmt.Sprintf(notifications.CompletedTemplate, updated.ID)
+				if err := s.smsQueue.EnqueueCompleted(ctx, tx, updated.ID, phoneNumber, template); err != nil {
+					return err
+				}
+			}
 		} else {
 			updated = current
 		}
@@ -304,6 +327,20 @@ func (s *Service) repoGetByID(ctx context.Context, id int64) (*ServiceRequest, e
 	}
 
 	return &row, nil
+}
+
+func (s *Service) lookupUserPhone(ctx context.Context, tx *gorm.DB, userID int64) (string, error) {
+	var row struct {
+		Phone string `gorm:"column:phone_number"`
+	}
+	if err := tx.WithContext(ctx).Table("users").Select("phone_number").Where("id = ?", userID).Take(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrServiceRequestNotFound
+		}
+		return "", fmt.Errorf("get customer phone for sms: %w", err)
+	}
+
+	return row.Phone, nil
 }
 
 func toServiceRequestResponse(row ServiceRequest) ServiceRequestResponse {
