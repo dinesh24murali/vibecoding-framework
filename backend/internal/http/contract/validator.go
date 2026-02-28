@@ -73,6 +73,11 @@ func (v *Validator) Middleware() gin.HandlerFunc {
 			Request:    c.Request,
 			PathParams: pathParams,
 			Route:      route,
+			Options: &openapi3filter.Options{
+				AuthenticationFunc: func(_ context.Context, _ *openapi3filter.AuthenticationInput) error {
+					return nil
+				},
+			},
 		}
 
 		if err := openapi3filter.ValidateRequest(v.validationCtx, requestInput); err != nil {

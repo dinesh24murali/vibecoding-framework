@@ -11,6 +11,7 @@ import (
 	"github.com/dinesh/vibecoding-framework/backend/internal/payments"
 	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
+	"github.com/dinesh/vibecoding-framework/backend/internal/servicerequests"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,6 +21,7 @@ type Dependencies struct {
 	PaymentsHandler     *payments.Handler
 	ProvidersHandler    *providers.Handler
 	PlansHandler        *plans.Handler
+	ServiceReqHandler   *servicerequests.Handler
 	AdminAuthMiddleware gin.HandlerFunc
 }
 
@@ -83,6 +85,11 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 		admin.GET("/plans/:planId", deps.PlansHandler.GetPlanByID)
 		admin.PATCH("/plans/:planId", deps.PlansHandler.UpdatePlan)
 		admin.DELETE("/plans/:planId", deps.PlansHandler.DeletePlan)
+	}
+	if deps.ServiceReqHandler != nil {
+		admin.GET("/service-requests", deps.ServiceReqHandler.ListServiceRequests)
+		admin.GET("/service-requests/:serviceRequestId", deps.ServiceReqHandler.GetServiceRequestByID)
+		admin.PATCH("/service-requests/:serviceRequestId/status", deps.ServiceReqHandler.UpdateServiceRequestStatus)
 	}
 
 	return engine, nil

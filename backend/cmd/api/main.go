@@ -64,6 +64,8 @@ func main() {
 	captchaClient := captcha.NewGoogleClient(cfg.Recaptcha.SecretKey)
 	captchaService := captcha.NewService(captchaClient, cfg.Recaptcha.MinScore, cfg.Recaptcha.Enabled)
 	serviceRequestRepo := servicerequests.NewRepository(gormDB)
+	serviceRequestService := servicerequests.NewService(gormDB)
+	serviceRequestHandler := servicerequests.NewHandler(serviceRequestService)
 	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo, captchaService, razorpayClient)
 	checkoutHandler := checkout.NewHandler(checkoutService)
 	paymentsService := payments.NewService(gormDB, razorpayClient, payments.NewRetryAuditRepo(gormDB), captchaService)
@@ -83,6 +85,7 @@ func main() {
 		PaymentsHandler:     paymentsHandler,
 		ProvidersHandler:    providerHandler,
 		PlansHandler:        planHandler,
+		ServiceReqHandler:   serviceRequestHandler,
 		AdminAuthMiddleware: adminAuthMiddleware,
 	})
 	if err != nil {
