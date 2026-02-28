@@ -1,11 +1,12 @@
 GO ?= go
 
-.PHONY: help run-api run-worker test test-v tidy fmt
+.PHONY: help run-api run-worker migrate-up test test-v tidy fmt
 
 help:
 	@printf "Available targets:\n"
 	@printf "  make run-api      # Run API server\n"
 	@printf "  make run-worker   # Run worker health server\n"
+	@printf "  make migrate-up   # Run DB migrations\n"
 	@printf "  make test         # Run backend tests\n"
 	@printf "  make test-v       # Run backend tests (verbose)\n"
 	@printf "  make tidy         # Sync Go module dependencies\n"
@@ -16,6 +17,9 @@ run-api:
 
 run-worker:
 	$(GO) run ./cmd/worker
+
+migrate-up:
+	$(GO) run ./cmd/migrate up
 
 test:
 	$(GO) test ./...
