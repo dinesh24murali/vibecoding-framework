@@ -11,11 +11,14 @@ import (
 	"time"
 
 	"github.com/dinesh/vibecoding-framework/backend/internal/auth"
+	"github.com/dinesh/vibecoding-framework/backend/internal/checkout"
 	"github.com/dinesh/vibecoding-framework/backend/internal/config"
 	"github.com/dinesh/vibecoding-framework/backend/internal/db"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/dinesh/vibecoding-framework/backend/internal/router"
+	"github.com/dinesh/vibecoding-framework/backend/internal/servicerequests"
 	"github.com/dinesh/vibecoding-framework/backend/internal/users"
 )
 
@@ -52,6 +55,12 @@ func main() {
 	providerRepo := providers.NewRepository(gormDB)
 	providerService := providers.NewService(providerRepo)
 	providerHandler := providers.NewHandler(providerService)
+	planRepo := plans.NewRepository(gormDB)
+	planService := plans.NewService(planRepo)
+	planHandler := plans.NewHandler(planService)
+	serviceRequestRepo := servicerequests.NewRepository(gormDB)
+	checkoutService := checkout.NewService(gormDB, planRepo, serviceRequestRepo)
+	checkoutHandler := checkout.NewHandler(checkoutService)
 	adminAuthMiddleware := middleware.AdminAuth(func(token string) (string, string, error) {
 		claims, verifyErr := tokenManager.VerifyAccessToken(token)
 		if verifyErr != nil {
@@ -63,7 +72,9 @@ func main() {
 
 	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath, router.Dependencies{
 		AuthHandler:         authHandler,
+		CheckoutHandler:     checkoutHandler,
 		ProvidersHandler:    providerHandler,
+		PlansHandler:        planHandler,
 		AdminAuthMiddleware: adminAuthMiddleware,
 	})
 	if err != nil {

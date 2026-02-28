@@ -5,15 +5,19 @@ import (
 	"net/http"
 
 	"github.com/dinesh/vibecoding-framework/backend/internal/auth"
+	"github.com/dinesh/vibecoding-framework/backend/internal/checkout"
 	"github.com/dinesh/vibecoding-framework/backend/internal/http/contract"
 	"github.com/dinesh/vibecoding-framework/backend/internal/middleware"
+	"github.com/dinesh/vibecoding-framework/backend/internal/plans"
 	"github.com/dinesh/vibecoding-framework/backend/internal/providers"
 	"github.com/gin-gonic/gin"
 )
 
 type Dependencies struct {
 	AuthHandler         *auth.Handler
+	CheckoutHandler     *checkout.Handler
 	ProvidersHandler    *providers.Handler
+	PlansHandler        *plans.Handler
 	AdminAuthMiddleware gin.HandlerFunc
 }
 
@@ -45,6 +49,12 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 	if deps.ProvidersHandler != nil {
 		api.GET("/customer/providers", deps.ProvidersHandler.ListCustomerProviders)
 	}
+	if deps.PlansHandler != nil {
+		api.GET("/customer/providers/:providerId/plans", deps.PlansHandler.ListCustomerPlansByProvider)
+	}
+	if deps.CheckoutHandler != nil {
+		api.POST("/customer/checkout/service-requests", deps.CheckoutHandler.CreateServiceRequestAndPayment)
+	}
 
 	admin := api.Group("/admin")
 	if deps.AdminAuthMiddleware != nil {
@@ -59,6 +69,13 @@ func New(basePath string, appEnv string, openAPISpecPath string, deps Dependenci
 		admin.GET("/providers/:providerId", deps.ProvidersHandler.GetProviderByID)
 		admin.PATCH("/providers/:providerId", deps.ProvidersHandler.UpdateProvider)
 		admin.DELETE("/providers/:providerId", deps.ProvidersHandler.DeleteProvider)
+	}
+	if deps.PlansHandler != nil {
+		admin.GET("/plans", deps.PlansHandler.ListAdminPlans)
+		admin.POST("/plans", deps.PlansHandler.CreatePlan)
+		admin.GET("/plans/:planId", deps.PlansHandler.GetPlanByID)
+		admin.PATCH("/plans/:planId", deps.PlansHandler.UpdatePlan)
+		admin.DELETE("/plans/:planId", deps.PlansHandler.DeletePlan)
 	}
 
 	return engine, nil
