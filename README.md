@@ -23,3 +23,16 @@ Follow instructions in /.framework/Readme.md
 
 ## Step 3:
 Prompts gets generated here: /Docs/02_Production_Document_Prompts.md
+
+## Database backup and restore
+
+- Backup script: `infra/scripts/backup_db.sh`
+- Restore script: `infra/scripts/restore_db.sh`
+- Runbook: `infra/runbooks/backup_restore.md`
+
+Quick usage:
+
+```bash
+bash infra/scripts/backup_db.sh
+bash infra/scripts/restore_db.sh infra/backups/<backup-file>.sql.gz
+```
