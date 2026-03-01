@@ -9,28 +9,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const requestIDHeader = "X-Request-ID"
+const RequestIDHeader = "X-Request-ID"
 
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		requestID := c.GetHeader(requestIDHeader)
+		requestID := c.GetHeader(RequestIDHeader)
 		if requestID == "" {
 			requestID = randomID()
 		}
 
 		c.Set("request_id", requestID)
-		c.Writer.Header().Set(requestIDHeader, requestID)
+		c.Writer.Header().Set(RequestIDHeader, requestID)
 		c.Next()
 	}
 }
 
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, _ any) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, apperrors.NewInternal(getRequestID(c)))
+		c.AbortWithStatusJSON(http.StatusInternalServerError, apperrors.NewInternal(GetRequestID(c)))
 	})
 }
 
-func getRequestID(c *gin.Context) string {
+func GetRequestID(c *gin.Context) string {
 	requestID, exists := c.Get("request_id")
 	if !exists {
 		return ""

@@ -32,11 +32,20 @@ func New(basePath string, appEnv string, openAPISpecPath string, allowedOrigins 
 	}
 
 	engine := gin.New()
+	engine.HandleMethodNotAllowed = true
 	engine.Use(middleware.CORS(allowedOrigins))
 	engine.Use(middleware.RequestID())
-	engine.Use(gin.Logger())
+	engine.Use(middleware.Logging())
 	engine.Use(middleware.Recovery())
 	engine.Use(validator.Middleware())
+	engine.Use(middleware.ErrorHandler())
+
+	engine.NoRoute(func(c *gin.Context) {
+		middleware.AbortWithAPIError(c, http.StatusNotFound, "RESOURCE_NOT_FOUND", "resource not found")
+	})
+	engine.NoMethod(func(c *gin.Context) {
+		middleware.AbortWithAPIError(c, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+	})
 
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
