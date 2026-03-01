@@ -80,7 +80,7 @@ func main() {
 		return claims.RegisteredClaims.Subject, claims.Role, nil
 	})
 
-	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath, router.Dependencies{
+	engine, err := router.New(cfg.APIBasePath, cfg.AppEnv, cfg.OpenAPISpecPath, cfg.CORS.AllowedOrigins, router.Dependencies{
 		AuthHandler:         authHandler,
 		CheckoutHandler:     checkoutHandler,
 		PaymentsHandler:     paymentsHandler,

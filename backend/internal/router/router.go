@@ -25,13 +25,14 @@ type Dependencies struct {
 	AdminAuthMiddleware gin.HandlerFunc
 }
 
-func New(basePath string, appEnv string, openAPISpecPath string, deps Dependencies) (*gin.Engine, error) {
+func New(basePath string, appEnv string, openAPISpecPath string, allowedOrigins []string, deps Dependencies) (*gin.Engine, error) {
 	validator, err := contract.New(appEnv, openAPISpecPath)
 	if err != nil {
 		return nil, fmt.Errorf("setup contract validator: %w", err)
 	}
 
 	engine := gin.New()
+	engine.Use(middleware.CORS(allowedOrigins))
 	engine.Use(middleware.RequestID())
 	engine.Use(gin.Logger())
 	engine.Use(middleware.Recovery())

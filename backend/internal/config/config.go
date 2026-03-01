@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -24,6 +25,7 @@ type Config struct {
 	JWT              JWTConfig
 	Recaptcha        RecaptchaConfig
 	Razorpay         RazorpayConfig
+	CORS             CORSConfig
 }
 
 type DBConfig struct {
@@ -58,6 +60,10 @@ type RazorpayConfig struct {
 	KeyID         string
 	KeySecret     string
 	WebhookSecret string
+}
+
+type CORSConfig struct {
+	AllowedOrigins []string
 }
 
 func Load() (Config, error) {
@@ -101,6 +107,9 @@ func Load() (Config, error) {
 			KeyID:         getEnv("RAZORPAY_KEY_ID", "rzp_test_xxx"),
 			KeySecret:     getEnv("RAZORPAY_KEY_SECRET", "xxx"),
 			WebhookSecret: getEnv("RAZORPAY_WEBHOOK_SECRET", "xxx"),
+		},
+		CORS: CORSConfig{
+			AllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001")),
 		},
 	}
 
@@ -180,7 +189,25 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid SHUTDOWN_TIMEOUT: %s", cfg.ShutdownTimeout)
 	}
 
+	if len(cfg.CORS.AllowedOrigins) == 0 {
+		return Config{}, fmt.Errorf("invalid CORS_ALLOWED_ORIGINS: empty")
+	}
+
 	return cfg, nil
+}
+
+func splitCSV(raw string) []string {
+	parts := strings.Split(raw, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		result = append(result, trimmed)
+	}
+
+	return result
 }
 
 func (d DBConfig) DSN() string {
